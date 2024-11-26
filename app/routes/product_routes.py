@@ -17,13 +17,27 @@ templates = Jinja2Templates(directory="app/view_templates")
 # handle http get requests for the site root /
 # return the todos page
 @router.get("/", response_class=HTMLResponse)
-async def getProducts(request: Request):
+async def getProducts(request: Request, filter : str | None = "all"):
 
     products = getAllProducts()
     categories = getAllCategories()
 
     # note passing of parameters to the page
-    return templates.TemplateResponse("product/products.html", {"request": request, "products": products, "categories": categories })
+    return templates.TemplateResponse("product/products.html", {"request": request, "products": products, "categories": categories, "filter": "all" })
+
+
+@router.get("/filter/{filter}", response_class=HTMLResponse)
+async def getProductsFilter(request: Request, filter: str):
+    if filter == "all":
+        products = getAllProducts()
+    else:
+        # Filter products by the category name
+        products = [product for product in getAllProducts() if product['category']['name'] == filter]
+
+    return templates.TemplateResponse(
+        "product/partials/product_list.html",
+        {"request": request, "products": products, "filter": filter}
+    )
 
 @router.get("/update/{id}", response_class=HTMLResponse)
 async def getProfuctUpdateForm(request: Request, id: int):
@@ -50,3 +64,4 @@ def postProduct(request: Request, productData: Annotated[Product, Form()]) :
 def delProduct(request: Request, id: int):
     deleteProduct(id)
     return templates.TemplateResponse("product/partials/product_list.html", {"request": request, "products": getAllProducts()})
+
